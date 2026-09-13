@@ -14,14 +14,18 @@ import {
   Calendar,
   Sparkles
 } from 'lucide-react';
-import { ExpenseItem } from '../types';
+import { ExpenseItem, PilgrimRoute } from '../types';
 import { TOTAL_STAGES } from '../data/allStages';
 
-export const BudgetCalculator: React.FC = () => {
+interface BudgetCalculatorProps {
+  currentRoute?: PilgrimRoute;
+}
+
+export const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({ currentRoute }) => {
   const [activeSubTab, setActiveSubTab] = useState<'preventivo' | 'viaggio'>('preventivo');
 
   // Preventivo Parameters State
-  const [daysPlanned, setDaysPlanned] = useState<number>(35);
+  const [daysPlanned, setDaysPlanned] = useState<number>(currentRoute ? currentRoute.totalStages : 28);
   const [tentPercent, setTentPercent] = useState<number>(50); // 50% nights in tent
   const [conventPercent, setConventPercent] = useState<number>(40); // 40% in convent
   const [bookingPercent, setBookingPercent] = useState<number>(10); // 10% emergency booking
@@ -30,7 +34,16 @@ export const BudgetCalculator: React.FC = () => {
   const [bookingAvgCost, setBookingAvgCost] = useState<number>(30); // avg 30€
   const [dailyFoodCost, setDailyFoodCost] = useState<number>(15); // market & fornellino
   const [emergencyBuffer, setEmergencyBuffer] = useState<number>(80); // blisters, pharmacy
-  const [returnTransportCost, setReturnTransportCost] = useState<number>(45); // train from Leuca/Lecce
+  const [returnTransportCost, setReturnTransportCost] = useState<number>(currentRoute ? currentRoute.defaultReturnCost : 39);
+
+  // Sync state when route changes
+  useEffect(() => {
+    if (currentRoute) {
+      setDaysPlanned(currentRoute.totalStages);
+      setReturnTransportCost(currentRoute.defaultReturnCost);
+    }
+  }, [currentRoute?.id]);
+
 
   // Real Expenses in Trip State (from localStorage)
   const [expenses, setExpenses] = useState<ExpenseItem[]>(() => {
@@ -324,7 +337,9 @@ export const BudgetCalculator: React.FC = () => {
               </div>
 
               <div className="p-3 bg-stone-50 rounded-lg border border-stone-200 space-y-1">
-                <label htmlFor="return-transport" className="font-semibold text-stone-700 block">Treno Rientro da Leuca</label>
+                <label htmlFor="return-transport" className="font-semibold text-stone-700 block">
+                  Treno da {currentRoute?.defaultReturnCity || 'Destinazione'}
+                </label>
                 <div className="flex items-center gap-1">
                   <span className="text-stone-500 font-mono">€</span>
                   <input
@@ -337,7 +352,9 @@ export const BudgetCalculator: React.FC = () => {
                     className="w-full p-1.5 border border-stone-300 rounded font-mono font-bold text-stone-800"
                   />
                 </div>
-                <span className="text-[10px] text-stone-500 block">Bus Leuca + Freccia</span>
+                <span className="text-[10px] text-stone-500 block truncate" title={currentRoute?.returnTransportNote}>
+                  {currentRoute ? currentRoute.returnTransportNote.slice(0, 32) + '...' : 'Treno per Roma'}
+                </span>
               </div>
             </div>
           </div>

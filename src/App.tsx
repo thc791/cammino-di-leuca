@@ -6,8 +6,8 @@ import { BudgetCalculator } from './components/BudgetCalculator';
 import { BackpackChecklist } from './components/BackpackChecklist';
 import { AiAssistantModal } from './components/AiAssistantModal';
 import { EmergencyDirectoryModal } from './components/EmergencyDirectoryModal';
-import { allStages, REGION_FILTERS, TOTAL_KM, TOTAL_STAGES, MAX_DAILY_KM } from './data/allStages';
-import { PilgrimStage } from './types';
+import { getRouteById, DEFAULT_ROUTE_ID } from './data/allStages';
+import { PilgrimStage, RouteId } from './types';
 import {
   Search,
   Filter,
@@ -20,11 +20,13 @@ import {
   X,
   Layers,
   ShieldAlert,
-  ArrowRight
+  ArrowRight,
+  Bookmark
 } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('stages');
+  const [selectedRouteId, setSelectedRouteId] = useState<RouteId>(DEFAULT_ROUTE_ID);
   const [selectedRegion, setSelectedRegion] = useState<string>('Tutte le regioni');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterTentInConvent, setFilterTentInConvent] = useState<boolean>(false);
@@ -32,9 +34,18 @@ export default function App() {
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState<boolean>(false);
   const [isAiFloatingOpen, setIsAiFloatingOpen] = useState<boolean>(false);
 
-  // Filtered Stages
+  // Active route definition
+  const currentRoute = useMemo(() => getRouteById(selectedRouteId), [selectedRouteId]);
+
+  const handleSelectRouteId = (routeId: RouteId) => {
+    setSelectedRouteId(routeId);
+    setSelectedRegion('Tutte le regioni');
+    setSelectedStage(null);
+  };
+
+  // Filtered Stages for current route
   const filteredStages = useMemo(() => {
-    return allStages.filter((stage) => {
+    return currentRoute.stages.filter((stage) => {
       // Region match
       if (selectedRegion !== 'Tutte le regioni' && stage.region !== selectedRegion) {
         return false;
@@ -62,7 +73,7 @@ export default function App() {
       }
       return true;
     });
-  }, [selectedRegion, filterTentInConvent, searchQuery]);
+  }, [currentRoute, selectedRegion, filterTentInConvent, searchQuery]);
 
   const handleSelectOnMap = (stage: PilgrimStage) => {
     setSelectedStage(stage);
@@ -76,11 +87,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-stone-100 flex flex-col font-sans text-stone-900">
-      {/* Top Header */}
+      {/* Top Header with Route Switcher & Live Stats */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         openEmergency={() => setIsEmergencyModalOpen(true)}
+        selectedRouteId={selectedRouteId}
+        onSelectRouteId={handleSelectRouteId}
+        currentRoute={currentRoute}
       />
 
       {/* Main Content Area */}
@@ -92,19 +106,20 @@ export default function App() {
             <div className="bg-stone-900 text-stone-100 rounded-2xl p-5 sm:p-7 border border-stone-800 shadow-md relative overflow-hidden">
               <div className="relative z-10 max-w-3xl space-y-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-mono">
-                  <span>☩ Cammino Completo &bull; 35 Tappe Giornaliere &bull; Max 29.1 km</span>
+                  <span>
+                    {currentRoute.destinationIcon} {currentRoute.name} &bull; {currentRoute.totalStages} Tappe Giornaliere &bull; Max {currentRoute.maxDailyKm} km
+                  </span>
                 </div>
                 <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-white tracking-tight">
-                  Da Roma San Pietro a Santa Maria di Leuca
+                  Da Roma San Pietro a {currentRoute.destination.replace(/\(.*?\)/g, '').trim()}
                 </h2>
                 <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
-                  Itinerario religioso ufficiale a piedi: ogni tappa è strutturata per chi viaggia{' '}
-                  <strong className="text-amber-300">zaino e tenda</strong>, basandosi in primis sull'accoglienza di{' '}
-                  <strong className="text-amber-300">conventi, monasteri e chiese</strong> con la credenziale del
-                  pellegrino, con mappatura dei{' '}
-                  <strong className="text-emerald-300">campeggi e bivacchi</strong> e le{' '}
-                  <strong className="text-rose-300">offerte salva-vita Booking più economiche</strong> per ogni singola tappa.
+                  {currentRoute.description}
                 </p>
+                <div className="pt-1 text-xs text-amber-200/90 font-mono flex items-center gap-1.5">
+                  <Bookmark className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>{currentRoute.historicalContext}</span>
+                </div>
               </div>
             </div>
 
@@ -160,7 +175,7 @@ export default function App() {
                 <span className="text-[11px] font-mono text-stone-400 uppercase font-semibold shrink-0 mr-1 flex items-center gap-1">
                   <Filter className="w-3 h-3" /> Regione:
                 </span>
-                {REGION_FILTERS.map((reg) => (
+                {currentRoute.regionFilters.map((reg) => (
                   <button
                     key={reg}
                     onClick={() => setSelectedRegion(reg)}
@@ -180,7 +195,7 @@ export default function App() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-xs text-stone-500 px-1 font-mono">
                 <span>
-                  Visualizzate <strong>{filteredStages.length}</strong> di {TOTAL_STAGES} tappe
+                  Visualizzate <strong>{filteredStages.length}</strong> di {currentRoute.totalStages} tappe ({currentRoute.name})
                 </span>
                 <span>Tutte rigorosamente sotto i 30 km / giorno</span>
               </div>
@@ -225,10 +240,10 @@ export default function App() {
               <div>
                 <h3 className="font-serif font-bold text-stone-900 text-base sm:text-lg flex items-center gap-2">
                   <Compass className="w-5 h-5 text-emerald-600" />
-                  Mappa Geografica del Cammino di Leuca
+                  Mappa Geografica &bull; {currentRoute.name}
                 </h3>
                 <p className="text-xs text-stone-500">
-                  Visualizza l'intero tracciato Roma → Leuca, i marker dorati dei conventi, le tende verdi e i salva-vita Booking rossi.
+                  Visualizza l'intero tracciato {currentRoute.shortName} ({currentRoute.totalStages} tappe, {currentRoute.totalKm} km), i marker dorati dei conventi, le tende verdi e i salva-vita Booking rossi.
                 </p>
               </div>
 
@@ -244,7 +259,7 @@ export default function App() {
             </div>
 
             <PilgrimMap
-              stages={allStages}
+              stages={currentRoute.stages}
               selectedStage={selectedStage}
               onSelectStage={(s) => setSelectedStage(s)}
               onAskAi={handleAskAiForStage}
@@ -256,14 +271,21 @@ export default function App() {
         {activeTab === 'budget' && (
           <div className="space-y-4">
             <div className="bg-white p-4 rounded-xl border border-stone-200">
-              <h3 className="font-serif font-bold text-stone-900 text-base sm:text-lg">
-                Pianificazione Spese & Contabilità in Viaggio
-              </h3>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Calcola preventivamente il costo complessivo del pellegrinaggio stimando donativi dei conventi, notti in tenda e acquisti market, e registra ogni spesa in tempo reale sul sentiero.
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="font-serif font-bold text-stone-900 text-base sm:text-lg">
+                    Pianificazione Spese & Contabilità in Viaggio &bull; {currentRoute.name}
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Calcola preventivamente il costo complessivo del viaggio ({currentRoute.totalStages} giorni) stimando donativi dei conventi, notti in tenda e acquisti market, e registra ogni spesa in tempo reale sul sentiero.
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-mono font-semibold border border-amber-300">
+                  {currentRoute.shortName} &bull; {currentRoute.totalStages} giorni
+                </span>
+              </div>
             </div>
-            <BudgetCalculator />
+            <BudgetCalculator currentRoute={currentRoute} />
           </div>
         )}
 
@@ -275,7 +297,7 @@ export default function App() {
                 Equipaggiamento & Calcolo Grammi Zaino
               </h3>
               <p className="text-xs text-stone-500 mt-0.5">
-                Camminare zaino e tenda per 780 km richiede rigore nel peso. Mantieni il carico a secco sotto i 9.5 kg per preservare ginocchia e schiena!
+                Camminare zaino e tenda per oltre 600-780 km richiede rigore nel peso. Mantieni il carico a secco sotto i 9.5 kg per preservare ginocchia e schiena!
               </p>
             </div>
             <BackpackChecklist />
@@ -288,13 +310,13 @@ export default function App() {
             <div className="bg-white p-4 rounded-xl border border-stone-200">
               <h3 className="font-serif font-bold text-stone-900 text-base sm:text-lg flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-600" />
-                Guida Spirituale & Pratica del Pellegrino (AI)
+                Guida Spirituale & Pratica del Pellegrino &bull; {currentRoute.name}
               </h3>
               <p className="text-xs text-stone-500 mt-0.5">
-                Chiedi supporto immediato a Fra Cammino: come chiedere accoglienza a un convento, cosa fare in caso di maltempo con la tenda, come curare le vesciche o consigli su fonti d'acqua.
+                Chiedi supporto immediato a Fra Cammino: accoglienza nei conventi con credenziale, regole per la tenda e bivacco notturno, arrivo a Brindisi o Leuca, salva-vita Booking e fontanelle d'acqua.
               </p>
             </div>
-            <AiAssistantModal currentStage={selectedStage} isInline={true} />
+            <AiAssistantModal currentStage={selectedStage} currentRoute={currentRoute} isInline={true} />
           </div>
         )}
       </main>
@@ -316,6 +338,7 @@ export default function App() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
           <AiAssistantModal
             currentStage={selectedStage}
+            currentRoute={currentRoute}
             onClose={() => setIsAiFloatingOpen(false)}
             isInline={false}
           />
@@ -333,10 +356,10 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div>
             <span className="font-serif font-bold text-stone-200">
-              Cammino di Leuca: Da Roma San Pietro a Finibus Terrae
+              Percorsi Religiosi: {currentRoute.name} ({currentRoute.shortName})
             </span>
             <p className="text-stone-500 text-[11px] mt-0.5">
-              35 tappe sotto i 30 km &bull; Conventi con Credenziale, Tenda e Salva-Vita Booking
+              {currentRoute.totalStages} tappe rigorosamente sotto i 30 km &bull; Conventi con Credenziale, Tenda e Salva-Vita Booking
             </p>
           </div>
           <div className="flex items-center gap-4 text-stone-400 font-mono text-[11px]">
@@ -354,3 +377,4 @@ export default function App() {
     </div>
   );
 }
+

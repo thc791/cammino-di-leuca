@@ -13,7 +13,7 @@ import {
   Lightbulb,
   Trash2
 } from 'lucide-react';
-import { PilgrimStage } from '../types';
+import { PilgrimStage, PilgrimRoute } from '../types';
 
 interface AiMessage {
   sender: 'user' | 'ai';
@@ -24,24 +24,45 @@ interface AiMessage {
 
 interface AiAssistantModalProps {
   currentStage: PilgrimStage | null;
+  currentRoute?: PilgrimRoute;
   onClose?: () => void;
   isInline?: boolean;
 }
 
 export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({
   currentStage,
+  currentRoute,
   onClose,
   isInline = false,
 }) => {
+  const isTerraSanta = currentRoute?.id === 'roma_brindisi';
+
+  const defaultWelcome = isTerraSanta
+    ? 'Pace e bene, pellegrino! Sono Fra Cammino, la tua guida spirituale e pratica per il Cammino per la Terra Santa da Roma San Pietro a Brindisi (Porta d\'Oriente, 28 tappe rigorosamente sotto i 30 km). ' +
+      'Chiedimi qualsiasi cosa su accoglienza nei conventi con credenziale, aree tenda, alloggi salva-vita Booking, Colonne Romane, Tempio di San Giovanni al Sepolcro o regole del viandante!'
+    : 'Pace e bene, pellegrino! Sono Fra Cammino, la tua guida per il cammino a piedi con zaino e tenda da Roma San Pietro a Santa Maria di Leuca (35 tappe sotto i 30 km). ' +
+      'Chiedimi qualsiasi cosa su accoglienza nei conventi con credenziale, regole per la tenda, alloggi salva-vita economici, gestione dell\'acqua, cura dei piedi o risparmio!';
+
   const [messages, setMessages] = useState<AiMessage[]>([
     {
       sender: 'ai',
-      text:
-        'Pace e bene, pellegrino! Sono Fra Cammino, la tua guida per il cammino a piedi con zaino e tenda da Roma a Santa Maria di Leuca. ' +
-        'Chiedimi qualsiasi cosa su accoglienza nei conventi con credenziale, regole per la tenda, alloggi salva-vita economici, gestione dell\'acqua, cura dei piedi o risparmio!',
+      text: defaultWelcome,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
+
+  // Update initial message if route changes and only 1 message
+  useEffect(() => {
+    if (messages.length <= 1) {
+      setMessages([
+        {
+          sender: 'ai',
+          text: defaultWelcome,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    }
+  }, [currentRoute?.id]);
 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -55,13 +76,21 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({
     scrollToBottom();
   }, [messages, isLoading]);
 
-  const quickPrompts = [
-    { label: 'Tenda con pioggia/maltempo?', prompt: 'Cosa fare se piove forte mentre sono in cammino con zaino e tenda? Quando conviene attivare il Salva-Vita?' },
-    { label: 'Come chiedere accoglienza al convento?', prompt: 'Come presentarsi e chiedere accoglienza telefonica a un convento o parroco con la credenziale del pellegrino?' },
-    { label: 'Regole del donativo consapevole', prompt: 'Quali sono le regole etiche del donativo nei conventi e monasteri? Quanto è consigliato lasciare?' },
-    { label: 'Cura vesciche e piedi stasera', prompt: 'Come posso curare stasera le vesciche ai piedi dopo una tappa di 25 km e prevenirne di nuove domani?' },
-    { label: 'Risparmiare sul cibo con fornellino', prompt: 'Quali cibi nutrienti ed economici comprare nei discount per cucinare col fornellino in tenda?' },
-  ];
+  const quickPrompts = isTerraSanta
+    ? [
+        { label: 'Tempio del Sepolcro a Brindisi', prompt: 'Qual è il significato storico e spirituale del Tempio di San Giovanni al Sepolcro e delle Colonne Romane a Brindisi per chi va in Terra Santa?' },
+        { label: 'Tenda con pioggia/maltempo?', prompt: 'Cosa fare se piove forte mentre sono in cammino con zaino e tenda? Quando conviene attivare il Salva-Vita?' },
+        { label: 'Come chiedere accoglienza al convento?', prompt: 'Come presentarsi e chiedere accoglienza telefonica a un convento o parroco con la credenziale del pellegrino?' },
+        { label: 'Regole del donativo consapevole', prompt: 'Quali sono le regole etiche del donativo nei conventi e monasteri? Quanto è consigliato lasciare?' },
+        { label: 'Dove alloggiare a Brindisi prima del rientro', prompt: 'Quali sono le soluzioni per alloggiare a Brindisi (convento, tenda o salva-vita) prima di prendere il treno per Roma?' },
+      ]
+    : [
+        { label: 'Tenda con pioggia/maltempo?', prompt: 'Cosa fare se piove forte mentre sono in cammino con zaino e tenda? Quando conviene attivare il Salva-Vita?' },
+        { label: 'Come chiedere accoglienza al convento?', prompt: 'Come presentarsi e chiedere accoglienza telefonica a un convento o parroco con la credenziale del pellegrino?' },
+        { label: 'Regole del donativo consapevole', prompt: 'Quali sono le regole etiche del donativo nei conventi e monasteri? Quanto è consigliato lasciare?' },
+        { label: 'Cura vesciche e piedi stasera', prompt: 'Come posso curare stasera le vesciche ai piedi dopo una tappa di 25 km e prevenirne di nuove domani?' },
+        { label: 'Risparmiare sul cibo con fornellino', prompt: 'Quali cibi nutrienti ed economici comprare nei discount per cucinare col fornellino in tenda?' },
+      ];
 
   const handleSend = async (userText: string) => {
     const textToSend = userText.trim();
@@ -83,6 +112,12 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: textToSend,
+          route: currentRoute ? {
+            id: currentRoute.id,
+            name: currentRoute.name,
+            destination: currentRoute.destination,
+            totalStages: currentRoute.totalStages
+          } : undefined,
           currentStage: currentStage
             ? {
                 number: currentStage.number,

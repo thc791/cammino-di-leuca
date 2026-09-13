@@ -42,23 +42,27 @@ app.get("/api/health", (_req, res) => {
 
 // AI Pilgrim Assistant API
 app.post("/api/pilgrim-ai", async (req, res) => {
-  const { message, currentStage, history } = req.body;
+  const { message, currentStage, history, route } = req.body;
 
   if (!message || typeof message !== "string") {
     return res.status(400).json({ error: "Messaggio obbligatorio." });
   }
 
+  const routeName = route?.name || "Cammino per la Terra Santa (Roma → Brindisi) / Cammino di Leuca";
+  const routeDest = route?.destination || "Brindisi (Porta d'Oriente per la Terra Santa) o Santa Maria di Leuca";
+
   const stageContext = currentStage
-    ? `Tappa attuale del pellegrino: Tappa ${currentStage.number} da ${currentStage.from} a ${currentStage.to} (${currentStage.distanceKm} km, dislivello +${currentStage.elevationGain}m). Strutture disponibili in questa tappa: Conventi: ${currentStage.convents?.map((c: any) => `${c.name} (${c.costType || 'donativo'})`).join(", ") || "Nessuno"}; Campeggi/Tenda: ${currentStage.campsites?.map((c: any) => `${c.name} (€${c.price})`).join(", ") || "Aree bivacco libere"}; Salva-Vita: ${currentStage.emergencyStays?.map((e: any) => `${e.name} (~€${e.priceMin})`).join(", ")}.`
-    : "Il pellegrino sta pianificando il viaggio completo da Roma San Pietro a Santa Maria di Leuca (35 tappe sotto i 30km, 784 km totali).";
+    ? `Tappa attuale del pellegrino: Tappa ${currentStage.number} da ${currentStage.from} a ${currentStage.to} (${currentStage.distanceKm} km, dislivello +${currentStage.elevationGain}m). Itinerario: ${routeName}. Strutture disponibili in questa tappa: Conventi: ${currentStage.convents?.map((c: any) => `${c.name} (${c.costType || 'donativo'})`).join(", ") || "Nessuno"}; Campeggi/Tenda: ${currentStage.campsites?.map((c: any) => `${c.name} (€${c.price})`).join(", ") || "Aree bivacco libere"}; Salva-Vita: ${currentStage.emergencyStays?.map((e: any) => `${e.name} (~€${e.priceMin})`).join(", ")}.`
+    : `Il pellegrino sta pianificando l'itinerario a piedi con zaino e tenda: ${routeName}, destinazione ${routeDest}. Tutte le tappe sono rigorosamente sotto i 30 km giornalieri.`;
 
   // Attempt Gemini 2.5 Flash with strict timeout
   const ai = getGeminiClient();
 
   if (ai) {
     try {
-      const systemInstruction = `Sei "Fra Cammino", l'assistente spirituale, logistico ed esperto fraterno per i pellegrini che percorrono a piedi con zaino e tenda la Via Francigena nel Sud da Roma (San Pietro) a Santa Maria di Leuca (Finibus Terrae).
-Tutte le 35 tappe sono rigorosamente sotto i 30 km giornalieri.
+      const systemInstruction = `Sei "Fra Cammino", l'assistente spirituale, logistico ed esperto fraterno per i pellegrini che percorrono a piedi con zaino e tenda i percorsi religiosi da Roma San Pietro verso la Puglia:
+1. "Cammino per la Terra Santa" (Roma San Pietro → Brindisi, 28 tappe giornaliere max 29.1 km, storico porto dei Crociati e Templari, Colonne Romane dell'Appia e Tempio del Santo Sepolcro prima dell'imbarco verso Gerusalemme).
+2. "Cammino di Leuca" (Roma San Pietro → Santa Maria di Leuca, 35 tappe giornaliere max 29.1 km, Santuario Mariano De Finibus Terrae).
 
 Linee guida di risposta:
 1. Accoglienza religiosa (conventi, monasteri, parrocchie): accessibile solo con Credenziale del Pellegrino (timbro, donativo libero consapevole o quota simbolica 10-15€, avvisare prima telefonicamente entro le 16:00).
@@ -66,8 +70,9 @@ Linee guida di risposta:
 3. "Salva-Vita Booking": se i conventi sono chiusi o pieni, c'è temporale forte o infortunio, consigliare subito di attivare uno dei 2 alloggi low-cost salva-vita della tappa (<35€/notte).
 4. Fornellino e budget: alimenti facili e veloci da discount (couscous, riso rapido, legumi, tonno, frutta secca, parmigiano).
 5. Prevenzione vesciche e idratazione: vaselina sui piedi la mattina, calze tecniche doppie anti-sfregamento, bere regolarmente alle fontanelle (nasoni a Roma, AQP in Puglia).
+6. Se la domanda riguarda Brindisi o la Terra Santa: cita il valore spirituale del porto d'Oriente, il Tempio romanico di San Giovanni al Sepolcro (replica dell'Anastasis del Santo Sepolcro di Gerusalemme), il timbro con la Croce di Terra Santa, le Colonne Romane terminali dell'Appia.
 
-Contesto tappa:
+Contesto attuale:
 ${stageContext}
 
 Rispondi sempre in italiano, con tono accogliente, pratico, fraterno e incoraggiante. Mantieni la risposta concisa (entro 150-200 parole) con elenchi puntati chiari per istruzioni pratiche.`;
@@ -235,12 +240,26 @@ function generatePilgrimFallback(msg: string, currentStage: any): string {
     );
   }
 
+  // 8. Brindisi, Terra Santa, Crociati, Templari, Sepolcro, Imbarco
+  if (query.includes("brindisi") || query.includes("terra santa") || query.includes("crociat") || query.includes("templar") || query.includes("sepolcro") || query.includes("imbarc") || query.includes("colonn")) {
+    return (
+      "Pace e bene, pellegrino della Terra Santa! Brindisi è per eccellenza la 'Porta d'Oriente':\n\n" +
+      "• **Le Colonne Romane terminali:** Sul lungomare di Brindisi terminava la Via Appia e la Via Traiana. Qui i pellegrini e i crociati contemplavano il mare prima di imbarcarsi per Gerusalemme.\n" +
+      "• **Il Tempio di San Giovanni al Sepolcro:** Straordinaria rotonda dell'XI secolo a pianta circolare, edificata come copia fedele della Basilica dell'Anastasis (Santo Sepolcro) di Gerusalemme. È la meta culminante dove ricevere il timbro con la Croce di Terra Santa e la benedizione del mare.\n" +
+      "• **Dove alloggiare a Brindisi con credenziale:**\n" +
+      "  - Monastero di Santa Chiara e San Benedetto (donativo libero, chiostro medievale, prato interno).\n" +
+      "  - Area tenda all'Oasi WWF di Torre Guaceto (11€) o Parco Cillarese.\n" +
+      "  - Salva-Vita: Ostello del Salento Low-Cost (~23€) o B&B Appia Terminal (~30€) a due passi da porto e stazione.\n" +
+      "• **Rientro a Roma:** Dalla Stazione FS di Brindisi Centrale partono treni diretti Freccia e Intercity per Roma Termini in circa 5 ore."
+    );
+  }
+
   // Default generale
   return (
-    "Pace e bene pellegrino! Sul Cammino da Roma San Pietro a Santa Maria di Leuca (784 km in 35 tappe) ricorda sempre i 4 pilastri del viandante con tenda:\n\n" +
-    "1. **Accoglienza con Credenziale:** Conventi e parrocchie accolgono a donativo (10-15€ consigliati) per timbro e riposo fraterno.\n" +
+    "Pace e bene pellegrino! Sui nostri cammini da Roma San Pietro verso la Puglia (Cammino per la Terra Santa a Brindisi in 28 tappe e Cammino di Leuca in 35 tappe, tutte rigorosamente sotto i 30 km):\n\n" +
+    "1. **Accoglienza con Credenziale:** Conventi, monasteri e parrocchie accolgono a donativo (10-15€ consigliati) per timbro e riposo fraterno.\n" +
     "2. **Tenda e Bivacco:** Monta al tramonto e smonta all'alba senza lasciare tracce, o chiedi al parroco di poter piantare la tenda nel prato dell'oratorio.\n" +
-    "3. **Salva-Vita Booking:** Tieni sempre a portata di mano le strutture low-cost in caso di maltempo estremo o conventi al completo.\n" +
+    "3. **Salva-Vita Booking:** Tieni sempre a portata di mano le 2 strutture più economiche (<35€) in caso di maltempo estremo o conventi al completo.\n" +
     "4. **Cura dei piedi e idratazione:** Bevi sempre 2 litri d'acqua al giorno e applica vaselina la mattina per prevenire ogni vescica.\n\n" +
     "Dimmi pure: hai dubbi su una tappa specifica, su un convento o su come organizzare lo zaino?"
   );

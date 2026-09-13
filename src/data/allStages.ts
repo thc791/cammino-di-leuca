@@ -27,3 +27,12 @@ export const REGION_FILTERS = [
   "Puglia (Terra di Bari)",
   "Puglia (Salento)"
 ] as const;
+
+export {
+  LEUCA_ROUTE,
+  BRINDISI_ROUTE,
+  ROUTES,
+  DEFAULT_ROUTE_ID,
+  getRouteById
+} from './routes';
+

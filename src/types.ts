@@ -1,5 +1,26 @@
 export type AccommodationCategory = 'convent' | 'campsite' | 'emergency_booking';
 
+export type RouteId = 'roma_leuca' | 'roma_brindisi';
+
+export interface PilgrimRoute {
+  id: RouteId;
+  name: string;
+  shortName: string;
+  subtitle: string;
+  destination: string;
+  destinationIcon: string;
+  description: string;
+  historicalContext: string;
+  totalStages: number;
+  totalKm: number;
+  maxDailyKm: number;
+  stages: PilgrimStage[];
+  regionFilters: readonly string[];
+  returnTransportNote: string;
+  defaultReturnCost: number;
+  defaultReturnCity: string;
+}
+
 export interface ConventHost {
   id: string;
   name: string;
