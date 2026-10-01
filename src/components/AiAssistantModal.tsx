@@ -35,9 +35,13 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({
   onClose,
   isInline = false,
 }) => {
-  const isTerraSanta = currentRoute?.id === 'roma_brindisi';
+  const isBrindisi = currentRoute?.id === 'roma_brindisi';
+  const isJerusalem = currentRoute?.id === 'terra_santa_gerusalemme';
 
-  const defaultWelcome = isTerraSanta
+  const defaultWelcome = isJerusalem
+    ? 'Pace e bene, pellegrino della Terra Santa! Sono Fra Cammino, la tua guida per il cammino a piedi da Giaffa a Gerusalemme (6 tappe, tutte rigorosamente sotto i 30 km). ' +
+      'Chiedimi qualsiasi cosa su come passare lo stretto da Brindisi in traghetto o in aereo, regole per tenda e fornellino (vietate le bombole sui voli!), accoglienza nei conventi francescani Casa Nova, monasteri trappisti a Latrun, rispetto dello Shabbat e come ottenere il Testimonium al Santo Sepolcro!'
+    : isBrindisi
     ? 'Pace e bene, pellegrino! Sono Fra Cammino, la tua guida spirituale e pratica per il Cammino per la Terra Santa da Roma San Pietro a Brindisi (Porta d\'Oriente, 28 tappe rigorosamente sotto i 30 km). ' +
       'Chiedimi qualsiasi cosa su accoglienza nei conventi con credenziale, aree tenda, alloggi salva-vita Booking, Colonne Romane, Tempio di San Giovanni al Sepolcro o regole del viandante!'
     : 'Pace e bene, pellegrino! Sono Fra Cammino, la tua guida per il cammino a piedi con zaino e tenda da Roma San Pietro a Santa Maria di Leuca (35 tappe sotto i 30 km). ' +
@@ -76,20 +80,28 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({
     scrollToBottom();
   }, [messages, isLoading]);
 
-  const quickPrompts = isTerraSanta
+  const quickPrompts = isJerusalem
     ? [
+        { label: 'Galateo: come chiamare i conventi?', prompt: 'Qual è il galateo telefonico per chiamare conventi e parrocchie (orari raccomandati, momenti da evitare e formule di saluto)?' },
+        { label: 'Aereo: è permesso e dove comprare gas?', prompt: 'L\'aereo è permesso nel pellegrinaggio a piedi per la Terra Santa? E dove compro la bombola a gas a Giaffa visto che è vietata sui voli?' },
+        { label: 'Traghetti e passaggio stretto da Brindisi', prompt: 'Come funziona il passaggio dello stretto in traghetto da Brindisi per la Grecia e le rotte verso la Terra Santa?' },
+        { label: 'Come ottenere il Testimonium a Gerusalemme', prompt: 'Cosa bisogna fare per ricevere la pergamena ufficiale del Testimonium Peregrinationis alla Custodia di Terra Santa di Gerusalemme?' },
+        { label: 'Regole dello Shabbat e spesa fornellino', prompt: 'Come gestire lo Shabbat in cammino per non rimanere senza cibo per il fornellino e acqua?' },
+      ]
+    : isBrindisi
+    ? [
+        { label: 'Galateo: come chiamare i conventi?', prompt: 'Qual è il galateo telefonico per chiamare conventi e parrocchie (orari raccomandati, momenti da evitare e formule di saluto)?' },
+        { label: 'Credenziale e Documenti da portare', prompt: 'Dove richiedere la Credenziale ufficiale prima di partire e quali documenti portare nello zaino per il Cammino?' },
         { label: 'Tempio del Sepolcro a Brindisi', prompt: 'Qual è il significato storico e spirituale del Tempio di San Giovanni al Sepolcro e delle Colonne Romane a Brindisi per chi va in Terra Santa?' },
-        { label: 'Tenda con pioggia/maltempo?', prompt: 'Cosa fare se piove forte mentre sono in cammino con zaino e tenda? Quando conviene attivare il Salva-Vita?' },
-        { label: 'Come chiedere accoglienza al convento?', prompt: 'Come presentarsi e chiedere accoglienza telefonica a un convento o parroco con la credenziale del pellegrino?' },
         { label: 'Regole del donativo consapevole', prompt: 'Quali sono le regole etiche del donativo nei conventi e monasteri? Quanto è consigliato lasciare?' },
-        { label: 'Dove alloggiare a Brindisi prima del rientro', prompt: 'Quali sono le soluzioni per alloggiare a Brindisi (convento, tenda o salva-vita) prima di prendere il treno per Roma?' },
+        { label: 'Tenda con pioggia/maltempo?', prompt: 'Cosa fare se piove forte mentre sono in cammino con zaino e tenda? Quando conviene attivare il Salva-Vita?' },
       ]
     : [
-        { label: 'Tenda con pioggia/maltempo?', prompt: 'Cosa fare se piove forte mentre sono in cammino con zaino e tenda? Quando conviene attivare il Salva-Vita?' },
-        { label: 'Come chiedere accoglienza al convento?', prompt: 'Come presentarsi e chiedere accoglienza telefonica a un convento o parroco con la credenziale del pellegrino?' },
+        { label: 'Galateo: come chiamare i conventi?', prompt: 'Qual è il galateo telefonico per chiamare conventi e parrocchie (orari raccomandati, momenti da evitare e formule di saluto)?' },
+        { label: 'Credenziale e Documenti da portare', prompt: 'Dove richiedere la Credenziale ufficiale prima di partire e quali documenti portare nello zaino per il Cammino?' },
         { label: 'Regole del donativo consapevole', prompt: 'Quali sono le regole etiche del donativo nei conventi e monasteri? Quanto è consigliato lasciare?' },
+        { label: 'Tenda con pioggia/maltempo?', prompt: 'Cosa fare se piove forte mentre sono in cammino con zaino e tenda? Quando conviene attivare il Salva-Vita?' },
         { label: 'Cura vesciche e piedi stasera', prompt: 'Come posso curare stasera le vesciche ai piedi dopo una tappa di 25 km e prevenirne di nuove domani?' },
-        { label: 'Risparmiare sul cibo con fornellino', prompt: 'Quali cibi nutrienti ed economici comprare nei discount per cucinare col fornellino in tenda?' },
       ];
 
   const handleSend = async (userText: string) => {

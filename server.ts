@@ -60,17 +60,24 @@ app.post("/api/pilgrim-ai", async (req, res) => {
 
   if (ai) {
     try {
-      const systemInstruction = `Sei "Fra Cammino", l'assistente spirituale, logistico ed esperto fraterno per i pellegrini che percorrono a piedi con zaino e tenda i percorsi religiosi da Roma San Pietro verso la Puglia:
+      const systemInstruction = `Sei "Fra Cammino", l'assistente spirituale, logistico ed esperto fraterno per i pellegrini che percorrono a piedi con zaino e tenda i percorsi religiosi:
 1. "Cammino per la Terra Santa" (Roma San Pietro → Brindisi, 28 tappe giornaliere max 29.1 km, storico porto dei Crociati e Templari, Colonne Romane dell'Appia e Tempio del Santo Sepolcro prima dell'imbarco verso Gerusalemme).
 2. "Cammino di Leuca" (Roma San Pietro → Santa Maria di Leuca, 35 tappe giornaliere max 29.1 km, Santuario Mariano De Finibus Terrae).
+3. "Cammino di Terra Santa a Piedi" (Giaffa/Jaffa → Gerusalemme Santo Sepolcro, 6 tappe tutte < 30 km: Giaffa, Lod, Ramla, Emmaus Nicopolis & Latrun, Abu Ghosh, Ein Karem, Gerusalemme).
+4. "Guida Ufficiale del Pellegrino (Credenziale, Galateo & Documenti)":
+   - Credenziale del Pellegrino: passaporto del viandante. Si richiede su www.sloways.shop (AEVF, 8€), Confraternita di San Jacopo di Perugia (offerta libera), o Basilica di Leuca (testimonium@camminidileuca.it). Obbligatoria per l'accoglienza povera e i timbri.
+   - Galateo Telefonico per i Conventi: chiamare sempre tra le 09:30-11:30 o 15:00-17:00. MAI durante le Lodi (06:30-08:00), pranzo (12:30-14:30), Vespri/cena (18:30-20:30) o silenzio notturno (dopo le 21:00). Saluto appropriato: "Pace e bene" con francescani, "Sia lodato Gesù Cristo" con parroci e monaci.
+   - La Regola del Donativo Consapevole: l'accoglienza a donativo non è gratis! Serve a sostenere le spese per chi arriverà domani. Quota raccomandata: 10-15€ a notte (o 20-25€ se c'è cena comunitaria).
+   - Documenti indispensabili: Carta d'identità / Passaporto con 6 mesi di validità (per Terra Santa), Tessera Sanitaria Europea TEAM, credenziale cartacea in busta impermeabile, lettera di presentazione pastorale del proprio parroco, visto Gatepass B2 per Israele, backup cartaceo e foto cloud.
+   - Oltremare & Volo: traghetto Brindisi-Grecia a passaggio ponte (45-75€), volo civile approvato dalla Custodia Francescana, divieto assoluto bombole gas in aereo (da comprare a Giaffa/Tel Aviv!), picchetti e bastoncini solo in stiva.
+   - Testimonium: a Leuca (Finibus Terrae), Brindisi (San Giovanni al Sepolcro), Gerusalemme (Convento San Salvatore Custodia di Terra Santa).
 
 Linee guida di risposta:
-1. Accoglienza religiosa (conventi, monasteri, parrocchie): accessibile solo con Credenziale del Pellegrino (timbro, donativo libero consapevole o quota simbolica 10-15€, avvisare prima telefonicamente entro le 16:00).
+1. Accoglienza religiosa (conventi, monasteri, parrocchie): accessibile solo con Credenziale del Pellegrino (timbro, donativo libero consapevole o quota simbolica 10-15€, avvisare prima telefonicamente).
 2. Tenda e bivacco: rispetto della regola del bivacco notturno dal tramonto all'alba, chiedere sempre permesso al parroco o sindaco per il prato, mai lasciare tracce.
 3. "Salva-Vita Booking": se i conventi sono chiusi o pieni, c'è temporale forte o infortunio, consigliare subito di attivare uno dei 2 alloggi low-cost salva-vita della tappa (<35€/notte).
-4. Fornellino e budget: alimenti facili e veloci da discount (couscous, riso rapido, legumi, tonno, frutta secca, parmigiano).
-5. Prevenzione vesciche e idratazione: vaselina sui piedi la mattina, calze tecniche doppie anti-sfregamento, bere regolarmente alle fontanelle (nasoni a Roma, AQP in Puglia).
-6. Se la domanda riguarda Brindisi o la Terra Santa: cita il valore spirituale del porto d'Oriente, il Tempio romanico di San Giovanni al Sepolcro (replica dell'Anastasis del Santo Sepolcro di Gerusalemme), il timbro con la Croce di Terra Santa, le Colonne Romane terminali dell'Appia.
+4. Fornellino e budget: alimenti facili e veloci da discount o mercati locali (hummus, falafel, pita in Terra Santa; legumi, pasta rapida e tonno in Italia).
+5. Prevenzione vesciche e idratazione: vaselina sui piedi la mattina, calze tecniche doppie anti-sfregamento, bere regolarmente alle fontanelle (nasoni a Roma, AQP in Puglia, fontane KKL in Terra Santa).
 
 Contesto attuale:
 ${stageContext}
@@ -141,8 +148,63 @@ function generatePilgrimFallback(msg: string, currentStage: any): string {
     );
   }
 
-  // 2. Convento, accoglienza, credenziale, timbro
-  if (query.includes("convent") || query.includes("parrocch") || query.includes("monaster") || query.includes("credenziale") || query.includes("accoglienz") || query.includes("chiamare")) {
+  // 2. Chiamare conventi, galateo telefonico, orari, formule di saluto
+  if (query.includes("chiamare") || query.includes("telefonare") || query.includes("telefonat") || query.includes("galateo") || query.includes("orari convent") || query.includes("script")) {
+    return (
+      "Pace e bene! Ecco il **Galateo Telefonico del Pellegrino** per chiamare conventi e parrocchie:\n\n" +
+      "• **Quando chiamare:**\n" +
+      "  - Mattina: **09:30 – 11:30** (dopo le Lodi comunitarie e prima del pranzo).\n" +
+      "  - Pomeriggio: **15:00 – 17:00** (dopo il riposo e prima dei Vespri serali).\n" +
+      "  - **DA EVITARE ASSOLUTAMENTE:** 06:30-08:30 (preghiera), 12:30-14:30 (pranzo monastico), 18:30-20:30 (Messa/cena) e dopo le 21:00 (silenzio notturno).\n" +
+      "• **Formule di saluto:**\n" +
+      "  - Francescani/Cappuccini: *'Pace e bene Padre/Fratello...'*.\n" +
+      "  - Parroci: *'Sia lodato Gesù Cristo / Buongiorno don [Nome]...'*\n" +
+      "  - Benedettini/Trappisti: *'Laudato Gesù Cristo, Padre Foresterario...'*\n" +
+      "• **Cosa dire (Script essenziale):** Presentati per nome, specifica che sei un pellegrino a piedi con credenziale in arrivo per l'orario X, con sacco a pelo e materassino al seguito, chiedendo con umiltà se c'è ospitalità povera (posto sacco a pelo o prato per la tenda).\n" +
+      "• **Se dicono di no:** ringrazia sempre di cuore per la preghiera e non insistere mai!"
+    );
+  }
+
+  // 2b. Documenti, passaporto, visto, tessera sanitaria, lettera parroco
+  if (query.includes("document") || query.includes("passaport") || query.includes("visto") || query.includes("tessera sanitari") || query.includes("lettera") || query.includes("carta identit")) {
+    return (
+      "Pace e bene! Ecco la checklist dei **Documenti Indispensabili** da tenere nella busta impermeabile dello zaino:\n\n" +
+      "1. **Carta d'Identità valida:** per la registrazione ospiti nei conventi e ostelli italiani.\n" +
+      "2. **Tessera Sanitaria Europea (TEAM):** per assistenza medica, guardie mediche e farmacie.\n" +
+      "3. **Credenziale Ufficiale del Pellegrino:** con gli spazi per i timbri giornalieri.\n" +
+      "4. **Lettera di Presentazione del tuo Parroco:** su carta intestata con timbro parrocchiale; apre le porte dei monasteri più riservati.\n" +
+      "5. **Per chi va in Terra Santa (Israele):** Passaporto con almeno 6 mesi di validità residua, tagliandino azzurro *Gatepass B2* rilasciato all'arrivo a Tel Aviv (senza timbro sul passaporto) e assicurazione sanitaria viaggio.\n" +
+      "• **Consiglio d'oro:** fai foto a tutti i documenti e salvali offline sullo smartphone e sul cloud."
+    );
+  }
+
+  // 2c. Credenziale, timbri, testimonium, dove richiederla
+  if (query.includes("credenziale") || query.includes("timbro") || query.includes("timbri") || query.includes("testimonium") || query.includes("richieder")) {
+    return (
+      "Pace e bene! La **Credenziale del Pellegrino** è il passaporto del viandante:\n\n" +
+      "• **Dove richiederla prima di partire:**\n" +
+      "  - Online su **www.sloways.shop** (ufficiale AEVF, costo 8€).\n" +
+      "  - Confraternita di San Jacopo di Compostela (Perugia, www.confraternitadisanjacopo.it, a offerta libera).\n" +
+      "  - A Roma: Sagrestia della Basilica di San Pietro o Spedale della Provvidenza a Trastevere.\n" +
+      "• **Timbri (Sellos):** Fai apporre 1 timbro al giorno (chiesa, convento, municipio, pro loco o bar del borgo).\n" +
+      "• **Testimonium Finale:** Rilasciato a Santa Maria di Leuca (testimonium@camminidileuca.it per gli ultimi 100 km), a Brindisi (Tempio del Sepolcro), a Roma e a Gerusalemme (Convento San Salvatore della Custodia di Terra Santa)."
+    );
+  }
+
+  // 2d. Donativo consapevole, costo conventi
+  if (query.includes("donativo") || query.includes("offerta") || query.includes("gratis") || query.includes("costo convent") || query.includes("quanto lasciare")) {
+    return (
+      "Pace e bene! L'accoglienza a **Donativo** nei conventi NON significa 'gratis':\n\n" +
+      "• **Significato evangelico:** È un atto di carità e corresponsabilità. L'offerta sostiene le spese vive (acqua calda, luce, pulizie) e permette al convento di tenere aperta la porta per i pellegrini che arriveranno domani!\n" +
+      "• **Quota raccomandata:**\n" +
+      "  - Solo pernottamento e doccia: almeno **10€ – 15€** a notte.\n" +
+      "  - Con cena comunitaria o colazione fraterna: almeno **20€ – 25€**.\n" +
+      "• **Consegna:** Lascia l'offerta nella cassetta delle elemosine o nelle mani del foresterario al momento della partenza con un sentito ringraziamento."
+    );
+  }
+
+  // 2e. Convento generico nella tappa
+  if (query.includes("convent") || query.includes("parrocch") || query.includes("monaster") || query.includes("accoglienz")) {
     const conventList = currentStage?.convents?.length
       ? currentStage.convents.map((c: any) => `• **${c.name}** (${c.costType || 'donativo'})`).join("\n")
       : "Nessun convento registrato direttamente all'arrivo di questa tappa, ma ci sono parrocchie limitrofe e strutture salva-vita!";
@@ -151,9 +213,9 @@ function generatePilgrimFallback(msg: string, currentStage: any): string {
       "Pace e bene! L'accoglienza nei conventi e nelle parrocchie è il cuore spirituale del nostro cammino:\n\n" +
       conventList + "\n\n" +
       "**Regole d'oro per l'accoglienza:**\n" +
-      "• **Orario chiamata:** Telefona sempre tra le 14:30 e le 17:00 per avvisare del tuo arrivo e chiedere se c'è disponibilità per un pellegrino a piedi.\n" +
+      "• **Orario chiamata:** Telefona tra le 09:30-11:30 o 15:00-17:00 per avvisare del tuo arrivo.\n" +
       "• **Credenziale obbligatoria:** Mostra subito la tua credenziale per ricevere il timbro ufficiale della tappa.\n" +
-      "• **Spirito di donativo:** Se la struttura è a donativo libero, la regola di carità cristiana suggerisce un'offerta di **10-15€** a persona per sostenere le spese di luce, acqua calda e pulizia."
+      "• **Donativo consapevole:** Se la struttura è a donativo libero, lascia un'offerta di **10-15€** a persona per le spese di accoglienza."
     );
   }
 
@@ -240,7 +302,43 @@ function generatePilgrimFallback(msg: string, currentStage: any): string {
     );
   }
 
-  // 8. Brindisi, Terra Santa, Crociati, Templari, Sepolcro, Imbarco
+  // 8. Aereo, volo, bombole a gas, picchetti tenda
+  if (query.includes("aereo") || query.includes("volo") || query.includes("volare") || query.includes("gas") || query.includes("bombo") || query.includes("picchett") || query.includes("bagaglio") || query.includes("stiva")) {
+    return (
+      "Pace e bene, pellegrino! Ecco le risposte essenziali sul raccordo aereo per la Terra Santa:\n\n" +
+      "1. **L'aereo è permesso nel pellegrinaggio?** Assolutamente SÌ: la Custodia Francescana di Terra Santa riconosce il volo come ponte logistico moderno data l'assenza di linee navali civili dirette tra Italia e Israele. Il cammino autentico ricomincia a piedi appena atterrati a Giaffa!\n" +
+      "2. **BOMBOLE A GAS (Divieto Tassativo):** Non puoi MAI imbarcare bombole (né in cabina né in stiva). Comprale appena arrivi a Giaffa (Decathlon Rishon LeZion, Rikohet Trekking o ferramenta di Old Jaffa a ~25 NIS / 6€).\n" +
+      "3. **Picchetti tenda & Bastoncini:** Vietati nel bagaglio a mano (sequestro immediato). Vanno imbarcati in stiva in una sacca protettiva da viaggio.\n" +
+      "4. **Visto & Passaporto:** Passaporto valido 6 mesi. All'arrivo a Tel Aviv ricevi il tagliandino azzurro **Gatepass B2** (nessun timbro sul passaporto!)."
+    );
+  }
+
+  // 9. Stretto, mare, traghetto da Brindisi
+  if (query.includes("stretto") || query.includes("traghett") || query.includes("mare") || query.includes("nave") || query.includes("grecia") || query.includes("igoumenitsa")) {
+    return (
+      "Pace e bene! Il passaggio dello stretto dal porto di Brindisi:\n\n" +
+      "• **Traghetto per la Grecia (Igoumenitsa):** Linee Grimaldi e A-Ships operano partenze serali giornaliere da Brindisi Costa Morena (~8-9 ore di navigazione notturna).\n" +
+      "• **Tariffa Passaggio Ponte (Deck):** Circa 45-75€ per viaggiatore a piedi con zaino. Puoi stendere materassino e sacco a pelo nelle zone interne del traghetto.\n" +
+      "• **Dalla Grecia a Israele:** Storicamente si proseguiva per Rodi, Cipro e Giaffa. Oggi per raggiungere Israele dal Mediterraneo orientale la via civile ordinaria è un volo breve Atene/Larnaca → Tel Aviv Ben Gurion.\n" +
+      "• **Il rito di Brindisi:** Prima di imbarcarti visita il Tempio di San Giovanni al Sepolcro per ricevere la solenne benedizione dei naviganti pellegrini."
+    );
+  }
+
+  // 10. Gerusalemme a piedi, Santo Sepolcro, Testimonium, Giaffa
+  if (query.includes("gerusalemme") || query.includes("giaffa") || query.includes("jaffa") || query.includes("sepolcro") || query.includes("testimonium") || query.includes("custodia") || query.includes("shabbat")) {
+    return (
+      "Pace e bene! Il Cammino a piedi da Giaffa a Gerusalemme comprende **6 tappe tutte sotto i 30 km** (118.9 km totali):\n\n" +
+      "1. **Giaffa → Lod (22.4 km):** Chiesa di San Pietro all'antico porto e Basilica di San Giorgio a Lod.\n" +
+      "2. **Lod → Ramla → Neve Shalom (21.8 km):** Convento Francescano dal 1296 e Oasi di Pace interreligiosa.\n" +
+      "3. **Neve Shalom → Latrun & Emmaus (18.2 km):** Abbazia Trappista e luogo del Vangelo dei Discepoli di Emmaus.\n" +
+      "4. **Latrun → Abu Ghosh (20.7 km):** Ascesa ai Monti di Giudea e Abbazia Crociata del 1140.\n" +
+      "5. **Abu Ghosh → Ein Karem (19.3 km):** Sorgenti di Sataf e Santuario della Visitazione del Battista.\n" +
+      "6. **Ein Karem → GERUSALEMME (16.5 km):** Ingresso da Porta di Giaffa, timbro e **Testimonium** al Convento di San Salvatore (Custodia Terra Santa) e ingresso al Santo Sepolcro (Anastasis)!\n\n" +
+      "• **Shabbat:** Ricorda che da venerdì tramonto a sabato sera i negozi ebraici e trasporti chiudono: pianifica la spesa fornellino in anticipo!"
+    );
+  }
+
+  // 11. Brindisi, Terra Santa, Crociati, Templari, Imbarco
   if (query.includes("brindisi") || query.includes("terra santa") || query.includes("crociat") || query.includes("templar") || query.includes("sepolcro") || query.includes("imbarc") || query.includes("colonn")) {
     return (
       "Pace e bene, pellegrino della Terra Santa! Brindisi è per eccellenza la 'Porta d'Oriente':\n\n" +

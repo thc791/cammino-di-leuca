@@ -6,6 +6,8 @@ import { BudgetCalculator } from './components/BudgetCalculator';
 import { BackpackChecklist } from './components/BackpackChecklist';
 import { AiAssistantModal } from './components/AiAssistantModal';
 import { EmergencyDirectoryModal } from './components/EmergencyDirectoryModal';
+import { HolyLandGuide } from './components/HolyLandGuide';
+import { PilgrimHandbook } from './components/PilgrimHandbook';
 import { getRouteById, DEFAULT_ROUTE_ID } from './data/allStages';
 import { PilgrimStage, RouteId } from './types';
 import {
@@ -21,7 +23,9 @@ import {
   Layers,
   ShieldAlert,
   ArrowRight,
-  Bookmark
+  Bookmark,
+  Scroll,
+  BookOpen,
 } from 'lucide-react';
 
 export default function App() {
@@ -111,7 +115,9 @@ export default function App() {
                   </span>
                 </div>
                 <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-white tracking-tight">
-                  Da Roma San Pietro a {currentRoute.destination.replace(/\(.*?\)/g, '').trim()}
+                  {currentRoute.id === 'terra_santa_gerusalemme'
+                    ? 'Dal Porto Biblico di Giaffa al Santo Sepolcro di Gerusalemme'
+                    : `Da Roma San Pietro a ${currentRoute.destination.replace(/\(.*?\)/g, '').trim()}`}
                 </h2>
                 <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
                   {currentRoute.description}
@@ -158,6 +164,14 @@ export default function App() {
                   >
                     <Tent className="w-3.5 h-3.5" />
                     <span>Solo con tenda in giardino convento</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('handbook')}
+                    className="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-amber-300/80"
+                  >
+                    <Scroll className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Guida & Credenziale</span>
                   </button>
 
                   <button
@@ -267,7 +281,24 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: CALCOLO SPESE & BUDGET */}
+        {/* TAB 3: GUIDA PELLEGRINO & CREDENZIALE (DOCUMENTI & GALATEO) */}
+        {activeTab === 'handbook' && (
+          <PilgrimHandbook />
+        )}
+
+        {/* TAB 4: GUIDA TERRA SANTA & OLTREMARE */}
+        {activeTab === 'holy_land_guide' && (
+          <HolyLandGuide
+            onLoadHolyLandRoute={() => {
+              setSelectedRouteId('terra_santa_gerusalemme');
+              setSelectedRegion('Tutte le regioni');
+              setActiveTab('stages');
+            }}
+            onSelectStageOnMap={handleSelectOnMap}
+          />
+        )}
+
+        {/* TAB 4: CALCOLO SPESE & BUDGET */}
         {activeTab === 'budget' && (
           <div className="space-y-4">
             <div className="bg-white p-4 rounded-xl border border-stone-200">

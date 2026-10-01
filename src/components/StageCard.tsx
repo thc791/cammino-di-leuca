@@ -15,7 +15,9 @@ import {
   Flame,
   Zap,
   Stamp,
-  Navigation
+  Navigation,
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
 import { PilgrimStage, ConventHost, CampsiteSpot, EmergencyBookingStay } from '../types';
 
@@ -88,15 +90,15 @@ export const StageCard: React.FC<StageCardProps> = ({
           <div className="flex items-center gap-3 text-stone-600">
             <span className="flex items-center gap-1 font-medium text-amber-800">
               <Church className="w-3.5 h-3.5 text-amber-600" />
-              {stage.convents.length} Conventi / Chiese
+              {stage.convents.length} Accoglienze Religiose
             </span>
             <span className="flex items-center gap-1 font-medium text-emerald-800">
               <Tent className="w-3.5 h-3.5 text-emerald-600" />
-              {stage.campsites.length} Aree Tenda
+              {stage.campsites.length} Aree Tenda / Bivacco
             </span>
             <span className="flex items-center gap-1 font-medium text-rose-800">
               <LifeBuoy className="w-3.5 h-3.5 text-rose-600" />
-              2 Salva-Vita
+              {stage.emergencyStays.length} Salva-Vita
             </span>
           </div>
 
@@ -130,7 +132,7 @@ export const StageCard: React.FC<StageCardProps> = ({
               onClick={() => setIsExpanded(!isExpanded)}
               className="px-3 py-1 rounded bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
             >
-              <span>{isExpanded ? 'Chiudi' : 'Tutti i Dettagli'}</span>
+              <span>{isExpanded ? 'Chiudi Dettagli' : 'Tutti i Dettagli'}</span>
               {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
           </div>
@@ -144,8 +146,8 @@ export const StageCard: React.FC<StageCardProps> = ({
           <div className="bg-sky-50 border border-sky-200 rounded-lg p-3 text-xs text-sky-950 flex items-start gap-2.5">
             <Droplets className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold">Punti Acqua & Terreno: </span>
-              {stage.waterPointsNote} &bull; <span className="italic">{stage.terrain}</span>
+              <span className="font-semibold text-sky-900">Punti Acqua & Fontanelle: </span>
+              {stage.waterPointsNote} &bull; <span className="italic text-stone-600">{stage.terrain}</span>
             </div>
           </div>
 
@@ -156,7 +158,7 @@ export const StageCard: React.FC<StageCardProps> = ({
                 <Church className="w-4 h-4 text-amber-600" />
                 1. Ospitalità Religiosa & Conventi (Con Credenziale)
               </h4>
-              <span className="text-xs text-stone-500">Priorità donativo/gratis</span>
+              <span className="text-xs text-stone-500 font-medium">Priorità pellegrina: donativo o tariffa agevolata</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -167,21 +169,34 @@ export const StageCard: React.FC<StageCardProps> = ({
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <h5 className="font-bold text-stone-900 text-sm leading-tight">
-                        {convent.name}
-                      </h5>
-                      <span className="shrink-0 text-xs px-2 py-0.5 rounded font-mono font-semibold bg-amber-200/80 text-amber-900">
-                        {convent.costType === 'donativo_libero' ? 'Donativo Libero' : `€${convent.suggestedDonationEur} pellegrino`}
+                      <div>
+                        <h5 className="font-bold text-stone-900 text-sm leading-tight">
+                          {convent.name}
+                        </h5>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded border border-emerald-300">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            Certificata
+                          </span>
+                          <span className="text-[10px] uppercase font-mono font-semibold text-stone-500">
+                            {convent.type}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-xs px-2 py-0.5 rounded font-mono font-semibold bg-amber-200/90 text-amber-950">
+                        {convent.costType === 'donativo_libero'
+                          ? 'Donativo Libero'
+                          : `€${convent.suggestedDonationEur} / notte`}
                       </span>
                     </div>
 
-                    <p className="text-xs text-stone-500 mb-2 flex items-center gap-1">
+                    <p className="text-xs text-stone-600 mb-2 flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
                       <span>{convent.address}</span>
                     </p>
 
                     {convent.notes && (
-                      <p className="text-xs text-stone-700 mb-2.5 italic bg-white/70 p-2 rounded border border-amber-100">
+                      <p className="text-xs text-stone-700 mb-2.5 italic bg-white/80 p-2 rounded border border-amber-100">
                         "{convent.notes}"
                       </p>
                     )}
@@ -191,7 +206,7 @@ export const StageCard: React.FC<StageCardProps> = ({
                       {convent.tentAllowedInGarden && (
                         <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-medium flex items-center gap-1">
                           <Tent className="w-3 h-3 text-emerald-600" />
-                          Tenda ammessa nel giardino/orto!
+                          Tenda ammessa nel giardino/orto
                         </span>
                       )}
                       {convent.hasStamp && (
@@ -219,14 +234,14 @@ export const StageCard: React.FC<StageCardProps> = ({
 
                   {/* Direct Contact Actions */}
                   <div className="pt-2 border-t border-amber-200/60 flex items-center justify-between text-xs">
-                    <span className="text-stone-500 text-[11px] truncate max-w-[130px]">
-                      {convent.contactPerson || 'Custode'}
+                    <span className="text-stone-600 text-[11px] truncate max-w-[140px] font-medium">
+                      {convent.contactPerson ? `Ref: ${convent.contactPerson}` : 'Custode / Accoglienza'}
                     </span>
                     <div className="flex items-center gap-2">
                       {convent.email && (
                         <a
                           href={`mailto:${convent.email}`}
-                          className="p-1.5 rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700"
+                          className="p-1.5 rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors"
                           title={`Scrivi email a ${convent.email}`}
                         >
                           <Mail className="w-3.5 h-3.5" />
@@ -234,7 +249,7 @@ export const StageCard: React.FC<StageCardProps> = ({
                       )}
                       <a
                         href={`tel:${convent.phone.replace(/\s+/g, '')}`}
-                        className="px-2.5 py-1 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-medium flex items-center gap-1"
+                        className="px-2.5 py-1 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-medium flex items-center gap-1 shadow-sm transition-colors"
                       >
                         <Phone className="w-3.5 h-3.5" />
                         <span>Chiama {convent.phone}</span>
@@ -246,95 +261,126 @@ export const StageCard: React.FC<StageCardProps> = ({
             </div>
           </div>
 
-          {/* 2. SEZIONE CAMPEGGI & AREE TENDA */}
+          {/* 2. SEZIONE CAMPEGGI & AREE TENDA (CON DISTINZIONE TRASPARENTE) */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5 font-mono">
                 <Tent className="w-4 h-4 text-emerald-600" />
-                2. Campeggi & Aree Bivacco Tenda
+                2. Campeggi & Aree Sosta Tenda
               </h4>
-              <span className="text-xs text-stone-500">Zaino e tenda</span>
+              <span className="text-xs text-stone-500 font-medium">Zaino e tenda da trekking</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {stage.campsites.map((camp: CampsiteSpot) => (
-                <div
-                  key={camp.id}
-                  className="p-3.5 rounded-lg border border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50/80 transition-colors flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <h5 className="font-bold text-stone-900 text-sm">
-                        {camp.name}
-                      </h5>
-                      <span className="shrink-0 text-xs px-2 py-0.5 rounded font-mono font-semibold bg-emerald-200 text-emerald-900">
-                        {camp.priceTentPerNightEur === 0
-                          ? 'Bivacco Gratuito'
-                          : `€${camp.priceTentPerNightEur} / notte tenda`}
-                      </span>
+              {stage.campsites.map((camp: CampsiteSpot) => {
+                const isOfficialCamp = camp.type === 'campeggio_ufficiale';
+                const isAgriCamp = camp.type === 'agricampeggio';
+                const tagLabel = isOfficialCamp
+                  ? 'Campeggio Ufficiale'
+                  : isAgriCamp
+                  ? 'Piazzola Rurale / Agriturismo'
+                  : 'Area Sosta / Bivacco Consentito';
+
+                return (
+                  <div
+                    key={camp.id}
+                    className="p-3.5 rounded-lg border border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50/80 transition-colors flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div>
+                          <h5 className="font-bold text-stone-900 text-sm">
+                            {camp.name}
+                          </h5>
+                          <span
+                            className={`inline-block mt-0.5 px-2 py-0.5 text-[10px] font-bold rounded border ${
+                              isOfficialCamp
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : isAgriCamp
+                                ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                : 'bg-blue-100 text-blue-900 border-blue-300'
+                            }`}
+                          >
+                            {tagLabel}
+                          </span>
+                        </div>
+                        <span className="shrink-0 text-xs px-2 py-0.5 rounded font-mono font-semibold bg-emerald-200 text-emerald-950">
+                          {camp.priceTentPerNightEur === 0
+                            ? 'Bivacco Gratuito'
+                            : `€${camp.priceTentPerNightEur} / notte tenda`}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-stone-500 mb-2 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+                        <span>{camp.address}</span>
+                      </p>
+
+                      {/* Avviso reale trasparente per il pellegrino */}
+                      {camp.instructions && (
+                        <div className="text-xs text-stone-800 mb-2.5 bg-white p-2.5 rounded border border-emerald-200/80 shadow-xs flex items-start gap-2">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                          <span className="leading-snug">{camp.instructions}</span>
+                        </div>
+                      )}
+
+                      {/* Checklist dotazioni */}
+                      <div className="flex flex-wrap gap-2 text-[11px] mb-2 text-stone-600">
+                        <span className="flex items-center gap-1">
+                          <Droplets
+                            className={`w-3 h-3 ${camp.waterAvailable ? 'text-blue-500' : 'text-stone-300'}`}
+                          />
+                          {camp.waterAvailable ? 'Acqua potabile' : 'No acqua'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Droplets
+                            className={`w-3 h-3 ${camp.showerAvailable ? 'text-emerald-500' : 'text-stone-300'}`}
+                          />
+                          {camp.showerAvailable ? 'Doccia presente' : 'No doccia'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Zap
+                            className={`w-3 h-3 ${camp.electricityAvailable ? 'text-amber-500' : 'text-stone-300'}`}
+                          />
+                          {camp.electricityAvailable ? 'Ricarica cell' : 'Off-grid'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Flame
+                            className={`w-3 h-3 ${camp.stoveCookingAllowed ? 'text-orange-500' : 'text-stone-300'}`}
+                          />
+                          {camp.stoveCookingAllowed ? 'Fornellino OK' : 'No fiamme'}
+                        </span>
+                      </div>
                     </div>
 
-                    <p className="text-xs text-stone-500 mb-2 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
-                      <span>{camp.address}</span>
-                    </p>
-
-                    <p className="text-xs text-stone-700 mb-2.5 bg-white/70 p-2 rounded border border-emerald-100">
-                      {camp.instructions}
-                    </p>
-
-                    {/* Features checklist */}
-                    <div className="flex flex-wrap gap-2 text-[11px] mb-2 text-stone-600">
-                      <span className="flex items-center gap-1">
-                        <Droplets
-                          className={`w-3 h-3 ${camp.waterAvailable ? 'text-blue-500' : 'text-stone-300'}`}
-                        />
-                        {camp.waterAvailable ? 'Acqua potabile' : 'No acqua'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Droplets
-                          className={`w-3 h-3 ${camp.showerAvailable ? 'text-emerald-500' : 'text-stone-300'}`}
-                        />
-                        {camp.showerAvailable ? 'Doccia presente' : 'No doccia'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Zap
-                          className={`w-3 h-3 ${camp.electricityAvailable ? 'text-amber-500' : 'text-stone-300'}`}
-                        />
-                        {camp.electricityAvailable ? 'Ricarica cell' : 'Off-grid'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Flame
-                          className={`w-3 h-3 ${camp.stoveCookingAllowed ? 'text-orange-500' : 'text-stone-300'}`}
-                        />
-                        {camp.stoveCookingAllowed ? 'Fornellino OK' : 'No fiamme'}
-                      </span>
-                    </div>
+                    {/* Camping contact button */}
+                    {camp.phone ? (
+                      <div className="pt-2 border-t border-emerald-200/60 flex items-center justify-end text-xs">
+                        <a
+                          href={`tel:${camp.phone.replace(/\s+/g, '')}`}
+                          className="px-2.5 py-1 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white font-medium flex items-center gap-1 shadow-sm transition-colors"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>Chiama {camp.phone}</span>
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="pt-2 border-t border-emerald-200/60 text-right text-[11px] text-stone-500 italic">
+                        Accesso libero / Bivacco autorizzato
+                      </div>
+                    )}
                   </div>
-
-                  {/* Camping action */}
-                  {camp.phone && (
-                    <div className="pt-2 border-t border-emerald-200/60 flex items-center justify-end text-xs">
-                      <a
-                        href={`tel:${camp.phone.replace(/\s+/g, '')}`}
-                        className="px-2.5 py-1 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white font-medium flex items-center gap-1"
-                      >
-                        <Phone className="w-3.5 h-3.5" />
-                        <span>Info Piazzola {camp.phone}</span>
-                      </a>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          {/* 3. SEZIONE SALVA-VITA BOOKING (LE 2 OFFERTE PIU ECONOMICHE) */}
+          {/* 3. SEZIONE SALVA-VITA BOOKING (LE 2 STRUTTURE PIÙ ECONOMICHE) */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5 font-mono">
                 <LifeBuoy className="w-4 h-4 text-rose-600" />
-                3. "Salva-Vita" Booking (Le 2 Più Economiche Rilevate)
+                3. "Salva-Vita" (Le 2 Strutture Più Economiche sul Percorso)
               </h4>
               <span className="text-xs text-rose-700 font-medium">
                 In caso di maltempo, stanchezza o convento pieno
@@ -349,13 +395,18 @@ export const StageCard: React.FC<StageCardProps> = ({
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-4 h-4 rounded-full bg-rose-200 text-rose-800 text-[10px] font-bold flex items-center justify-center font-mono">
+                      <div className="flex items-start gap-1.5">
+                        <span className="w-4 h-4 rounded-full bg-rose-200 text-rose-800 text-[10px] font-bold flex items-center justify-center font-mono shrink-0 mt-0.5">
                           {idx + 1}
                         </span>
-                        <h5 className="font-bold text-stone-900 text-sm">
-                          {stay.name}
-                        </h5>
+                        <div>
+                          <h5 className="font-bold text-stone-900 text-sm">
+                            {stay.name}
+                          </h5>
+                          <span className="inline-block mt-0.5 px-2 py-0.2 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded border border-emerald-300">
+                            ✓ Struttura Verificata
+                          </span>
+                        </div>
                       </div>
                       <div className="text-right shrink-0">
                         <span className="text-xs px-2 py-0.5 rounded font-mono font-bold bg-rose-600 text-white">
@@ -369,7 +420,7 @@ export const StageCard: React.FC<StageCardProps> = ({
                         <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
                         <span>{stay.address}</span>
                       </span>
-                      <span className="font-mono text-stone-600 font-medium">
+                      <span className="font-mono text-stone-600 font-medium text-[11px]">
                         ~{stay.distanceFromTrailMeters}m dal cammino
                       </span>
                     </p>
@@ -392,13 +443,13 @@ export const StageCard: React.FC<StageCardProps> = ({
                     {stay.phone ? (
                       <a
                         href={`tel:${stay.phone.replace(/\s+/g, '')}`}
-                        className="px-2 py-1 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center gap-1 font-medium"
+                        className="px-2 py-1 rounded bg-stone-100 hover:bg-stone-200 text-stone-800 flex items-center gap-1 font-medium transition-colors"
                       >
-                        <Phone className="w-3 h-3" />
+                        <Phone className="w-3 h-3 text-stone-600" />
                         <span>{stay.phone}</span>
                       </a>
                     ) : (
-                      <span className="text-[11px] text-stone-400">Contatto su Booking</span>
+                      <span className="text-[11px] text-stone-400">Prenotazione online</span>
                     )}
 
                     <a
@@ -407,7 +458,7 @@ export const StageCard: React.FC<StageCardProps> = ({
                       rel="noopener noreferrer"
                       className="px-3 py-1.5 rounded bg-rose-600 hover:bg-rose-700 text-white font-semibold flex items-center gap-1 transition-colors shadow-sm ml-auto"
                     >
-                      <span>Vedi Offerte Booking</span>
+                      <span>Vedi Offerte</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>

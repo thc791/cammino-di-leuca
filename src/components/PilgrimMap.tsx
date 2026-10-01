@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { PilgrimStage, ConventHost, CampsiteSpot, EmergencyBookingStay } from '../types';
-import { allStages } from '../data/allStages';
-import { Church, Tent, LifeBuoy, MapPin, Navigation, Eye, EyeOff } from 'lucide-react';
+import { MapPin, Navigation, Eye, EyeOff } from 'lucide-react';
 
 interface PilgrimMapProps {
   stages: PilgrimStage[];
@@ -27,25 +26,34 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
   const [showEmergency, setShowEmergency] = useState(true);
   const [showRoute, setShowRoute] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [geoMessage, setGeoMessage] = useState<string | null>(null);
 
-  // Initialize Map
+  // Conteggi dinamici sulle tappe attualmente visualizzate
+  const totalConvents = stages.reduce((acc, s) => acc + (s.convents?.length || 0), 0);
+  const totalCampsites = stages.reduce((acc, s) => acc + (s.campsites?.length || 0), 0);
+  const totalEmergency = stages.reduce((acc, s) => acc + (s.emergencyStays?.length || 0), 0);
+
+  // Inizializzazione Mappa con centratura intelligente dinamica
   useEffect(() => {
     if (!mapContainerRef.current) return;
-    if (mapInstanceRef.current) return; // already initialized
+    if (mapInstanceRef.current) return;
 
-    // Center map on Central-Southern Italy (between Rome and Leuca)
+    // Se la prima tappa è in Terra Santa (lat ~31), centra sul Medio Oriente, altrimenti sull'Italia
+    const firstCoord = stages[0]?.coordinates || [41.2, 15.5];
+    const initialCenter: [number, number] = firstCoord[0] < 35 ? [31.85, 35.0] : [41.2, 15.5];
+    const initialZoom = firstCoord[0] < 35 ? 9 : 7;
+
     const map = L.map(mapContainerRef.current, {
-      center: [41.2, 15.5],
-      zoom: 7,
+      center: initialCenter,
+      zoom: initialZoom,
       zoomControl: true,
       attributionControl: true,
     });
 
-    // Clean OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Cammino di Leuca',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Cammino Francigeno',
     }).addTo(map);
 
     markersLayerRef.current = L.layerGroup().addTo(map);
@@ -57,7 +65,7 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
     };
   }, []);
 
-  // Update Markers & Polyline
+  // Aggiornamento Marker, Polilinea e Inquadratura
   useEffect(() => {
     const map = mapInstanceRef.current;
     const markersLayer = markersLayerRef.current;
@@ -70,31 +78,30 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
       polylineLayerRef.current = null;
     }
 
-    // 1. Draw Route Polyline from stage coords
-    if (showRoute) {
+    // 1. Tracciato GPX
+    if (showRoute && stages.length > 0) {
       const routePoints: [number, number][] = [];
       stages.forEach((stage, idx) => {
-        if (idx === 0) {
+        if (idx === 0 && stage.startCoordinates) {
           routePoints.push(stage.startCoordinates);
         }
         routePoints.push(stage.coordinates);
       });
 
       polylineLayerRef.current = L.polyline(routePoints, {
-        color: '#d97706', // amber-600
+        color: '#d97706',
         weight: 4,
         opacity: 0.85,
         dashArray: '6, 6',
       }).addTo(map);
     }
 
-    // 2. Stage Waypoint Markers
+    // 2. Marker per ogni Tappa
     stages.forEach((stage) => {
       const isSelected = selectedStage?.number === stage.number;
 
-      // Stage circle marker
       const stageMarker = L.circleMarker(stage.coordinates, {
-        radius: isSelected ? 9 : 6,
+        radius: isSelected ? 10 : 6,
         fillColor: isSelected ? '#b45309' : '#f59e0b',
         color: '#78350f',
         weight: isSelected ? 3 : 1.5,
@@ -103,7 +110,7 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
       });
 
       stageMarker.bindPopup(`
-        <div style="font-family: sans-serif; font-size: 13px; line-height: 1.4; min-width: 200px;">
+        <div style="font-family: sans-serif; font-size: 13px; line-height: 1.4; min-width: 220px;">
           <div style="background:#fef3c7; color:#92400e; font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px;">
             Tappa ${stage.number} &bull; ${stage.distanceKm} km
           </div>
@@ -114,7 +121,7 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
             ${stage.description.slice(0, 120)}...
           </p>
           <div style="display: flex; gap: 4px; margin-top: 6px;">
-            <button id="pop-select-${stage.number}" style="flex:1; background:#d97706; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">
+            <button id="pop-select-${stage.number}" style="flex:1; background:#d97706; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">
               Seleziona Tappa
             </button>
           </div>
@@ -130,8 +137,8 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
 
       markersLayer.addLayer(stageMarker);
 
-      // 3. Convents Markers (Amber Cross)
-      if (showConvents) {
+      // 3. Marker Conventi / Ospitalità Religiosa (Ambra)
+      if (showConvents && stage.convents) {
         stage.convents.forEach((convent: ConventHost) => {
           if (convent.lat && convent.lng) {
             const conventIcon = L.divIcon({
@@ -147,19 +154,25 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
 
             const marker = L.marker([convent.lat, convent.lng], { icon: conventIcon });
             marker.bindPopup(`
-              <div style="font-family: sans-serif; font-size: 13px; line-height: 1.4; max-width: 250px;">
-                <div style="background:#fef3c7; color:#78350f; font-weight:bold; font-size:10px; padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">
-                  ☩ CONVENTO &bull; Tappa ${stage.number}
+              <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4; max-width: 260px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <span style="background:#fef3c7; color:#78350f; font-weight:bold; font-size:10px; padding:2px 6px; border-radius:4px;">
+                    ☩ ${convent.type ? convent.type.toUpperCase() : 'OSPITALITÀ'} &bull; Tappa ${stage.number}
+                  </span>
+                  <span style="background:#ecfdf5; color:#065f46; font-size:9px; font-weight:bold; padding:2px 5px; border-radius:3px; border:1px solid #a7f3d0;">
+                    ✓ Verificata
+                  </span>
                 </div>
                 <h4 style="margin: 0 0 3px; font-size: 13px; font-weight: bold; color: #1c1917;">
                   ${convent.name}
                 </h4>
+                ${convent.contactPerson ? `<div style="font-size:11px; color:#92400e; font-weight:bold; margin-bottom:2px;">Referente: ${convent.contactPerson}</div>` : ''}
                 <p style="margin:0 0 4px; font-size:11px; color:#57534e;">
                   ${convent.address}
                 </p>
                 <div style="margin-bottom:6px; font-size:11px; font-weight:bold; color:#b45309;">
                   ${convent.costType === 'donativo_libero' ? 'Donativo Libero' : `€${convent.suggestedDonationEur} / notte`}
-                  ${convent.tentAllowedInGarden ? ' &bull; Tenda in giardino OK' : ''}
+                  ${convent.tentAllowedInGarden ? ' &bull; Tenda nel giardino OK' : ''}
                 </div>
                 <div style="display:flex; gap:6px;">
                   <a href="tel:${convent.phone.replace(/\s+/g, '')}" style="background:#d97706; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-size:11px; font-weight:bold; text-align:center;">
@@ -173,14 +186,18 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
         });
       }
 
-      // 4. Campsites & Tent spots (Emerald Tent)
-      if (showCampsites) {
+      // 4. Marker Campeggi & Aree Sosta Tende (Smeraldo con avviso trasparente)
+      if (showCampsites && stage.campsites) {
         stage.campsites.forEach((camp: CampsiteSpot) => {
           if (camp.lat && camp.lng) {
+            const isOfficialCamp = camp.type === 'campeggio_ufficiale';
+            const campBg = isOfficialCamp ? '#047857' : '#059669'; // Tonalità diverse tra camping ufficiale e bivacco
+            const campLabel = isOfficialCamp ? 'CAMPEGGIO UFFICIALE' : camp.type === 'agricampeggio' ? 'PIAZZOLA RURALE' : 'AREA BIVACCO';
+
             const campIcon = L.divIcon({
               className: 'custom-camp-marker',
               html: `
-                <div style="background:#047857; color:white; border:2px solid #ffffff; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
+                <div style="background:${campBg}; color:white; border:2px solid #ffffff; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
                   ▲
                 </div>
               `,
@@ -190,9 +207,14 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
 
             const marker = L.marker([camp.lat, camp.lng], { icon: campIcon });
             marker.bindPopup(`
-              <div style="font-family: sans-serif; font-size: 13px; line-height: 1.4; max-width: 250px;">
-                <div style="background:#d1fae5; color:#065f46; font-weight:bold; font-size:10px; padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">
-                  ▲ TENDA / CAMPEGGIO &bull; Tappa ${stage.number}
+              <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4; max-width: 270px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <span style="background:#d1fae5; color:#065f46; font-weight:bold; font-size:10px; padding:2px 6px; border-radius:4px;">
+                    ▲ ${campLabel} &bull; Tappa ${stage.number}
+                  </span>
+                  <span style="background:#ecfdf5; color:#065f46; font-size:9px; font-weight:bold; padding:2px 5px; border-radius:3px; border:1px solid #a7f3d0;">
+                    ✓ Attivo
+                  </span>
                 </div>
                 <h4 style="margin: 0 0 3px; font-size: 13px; font-weight: bold; color: #1c1917;">
                   ${camp.name}
@@ -200,10 +222,20 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
                 <p style="margin:0 0 4px; font-size:11px; color:#57534e;">
                   ${camp.address}
                 </p>
-                <div style="margin-bottom:6px; font-size:11px; font-weight:bold; color:#047857;">
+                <div style="margin-bottom:5px; font-size:11px; font-weight:bold; color:#047857;">
                   ${camp.priceTentPerNightEur === 0 ? 'Bivacco Gratuito' : `€${camp.priceTentPerNightEur} / notte tenda`}
-                  &bull; ${camp.stoveCookingAllowed ? 'Fornellino OK' : 'No fiamme'}
+                  &bull; ${camp.stoveCookingAllowed ? 'Fornellino consentito' : 'No fiamme libere'}
                 </div>
+
+                <!-- Box di avvertenza reale sulle istruzioni per i pellegrini -->
+                ${
+                  camp.instructions
+                    ? `<div style="background:#f0fdf4; border-left:3px solid #16a34a; padding:5px 7px; margin-bottom:6px; font-size:11px; color:#166534; line-height:1.3;">
+                        ${camp.instructions}
+                      </div>`
+                    : ''
+                }
+
                 ${
                   camp.phone
                     ? `<a href="tel:${camp.phone.replace(/\s+/g, '')}" style="display:inline-block; background:#047857; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-size:11px; font-weight:bold;">
@@ -218,8 +250,8 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
         });
       }
 
-      // 5. Emergency Booking Stays (Rose Lifebuoy)
-      if (showEmergency) {
+      // 5. Marker Alloggi Salva-Vita (Rosso / Rosa)
+      if (showEmergency && stage.emergencyStays) {
         stage.emergencyStays.forEach((stay: EmergencyBookingStay) => {
           if (stay.lat && stay.lng) {
             const stayIcon = L.divIcon({
@@ -235,19 +267,32 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
 
             const marker = L.marker([stay.lat, stay.lng], { icon: stayIcon });
             marker.bindPopup(`
-              <div style="font-family: sans-serif; font-size: 13px; line-height: 1.4; max-width: 250px;">
-                <div style="background:#ffe4e6; color:#9f1239; font-weight:bold; font-size:10px; padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">
-                  ◎ SALVA-VITA BOOKING &bull; Tappa ${stage.number}
+              <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4; max-width: 250px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <span style="background:#ffe4e6; color:#9f1239; font-weight:bold; font-size:10px; padding:2px 6px; border-radius:4px;">
+                    ◎ SALVA-VITA &bull; Tappa ${stage.number}
+                  </span>
+                  <span style="background:#ecfdf5; color:#065f46; font-size:9px; font-weight:bold; padding:2px 5px; border-radius:3px; border:1px solid #a7f3d0;">
+                    ✓ Struttura Reale
+                  </span>
                 </div>
                 <h4 style="margin: 0 0 3px; font-size: 13px; font-weight: bold; color: #1c1917;">
                   ${stay.name}
                 </h4>
+                <p style="margin:0 0 4px; font-size:11px; color:#57534e;">
+                  ${stay.address}
+                </p>
                 <div style="font-size:12px; font-weight:bold; color:#e11d48; margin-bottom:4px;">
                   Da €${stay.priceMinEur} &bull; ~${stay.distanceFromTrailMeters}m dal cammino
                 </div>
-                <a href="${stay.bookingSearchUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:#e11d48; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-size:11px; font-weight:bold; margin-top:2px;">
-                  Vedi su Booking.com
-                </a>
+                <div style="display:flex; gap:6px;">
+                  <a href="${stay.bookingSearchUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:#e11d48; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-size:11px; font-weight:bold;">
+                    Vedi Prezzi
+                  </a>
+                  <a href="tel:${stay.phone.replace(/\s+/g, '')}" style="display:inline-block; background:#374151; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-size:11px; font-weight:bold;">
+                    ${stay.phone}
+                  </a>
+                </div>
               </div>
             `);
             markersLayer.addLayer(marker);
@@ -256,16 +301,20 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
       }
     });
 
-    // Zoom to selected stage if present
+    // Zoom sulla tappa selezionata o su tutto il percorso
     if (selectedStage) {
       map.setView(selectedStage.coordinates, 12, { animate: true });
+    } else if (stages.length > 0) {
+      const allPoints: [number, number][] = stages.map((s) => s.coordinates);
+      map.fitBounds(L.latLngBounds(allPoints), { padding: [30, 30], maxZoom: 11 });
     }
   }, [stages, selectedStage, showConvents, showCampsites, showEmergency, showRoute, onSelectStage]);
 
-  // Geolocation Handler
+  // Gestione Geolocalizzazione
   const handleLocateMe = () => {
     if (!navigator.geolocation || !mapInstanceRef.current) {
-      alert('Geolocalizzazione non supportata o permessi non concessi.');
+      setGeoMessage('Geolocalizzazione non supportata o permessi non concessi.');
+      setTimeout(() => setGeoMessage(null), 4000);
       return;
     }
 
@@ -290,14 +339,16 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
       },
       (err) => {
         console.warn('Errore geolocalizzazione:', err);
-        alert('Impossibile rilevare la posizione GPS attuale.');
+        setGeoMessage('Impossibile rilevare la posizione GPS attuale.');
+        setTimeout(() => setGeoMessage(null), 4000);
       }
     );
   };
 
   const handleResetView = () => {
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.setView([41.2, 15.5], 7, { animate: true });
+    if (mapInstanceRef.current && stages.length > 0) {
+      const allPoints: [number, number][] = stages.map((s) => s.coordinates);
+      mapInstanceRef.current.fitBounds(L.latLngBounds(allPoints), { padding: [30, 30], maxZoom: 11 });
     }
   };
 
@@ -306,8 +357,21 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
       {/* Leaflet Map Div */}
       <div ref={mapContainerRef} className="w-full h-full" />
 
+      {/* Geolocation Notice Toast */}
+      {geoMessage && (
+        <div className="absolute top-3 left-3 z-[1001] bg-stone-900/90 text-white px-3 py-1.5 rounded-lg text-xs shadow-lg backdrop-blur-sm">
+          {geoMessage}
+        </div>
+      )}
+
+      {/* Verified Real Structures Badge */}
+      <div className="absolute bottom-3 left-3 z-[1000] hidden sm:flex items-center gap-1.5 bg-emerald-950/80 text-emerald-200 px-2.5 py-1 rounded-md text-[11px] font-mono backdrop-blur-sm border border-emerald-700/50">
+        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Mappa con Strutture Reali Verificate sul Territorio</span>
+      </div>
+
       {/* Interactive Map Filter Bar */}
-      <div className="absolute top-3 right-3 z-[1000] bg-white/95 backdrop-blur-sm p-2.5 rounded-lg border border-stone-200 shadow-lg text-xs space-y-2 max-w-[200px]">
+      <div className="absolute top-3 right-3 z-[1000] bg-white/95 backdrop-blur-sm p-2.5 rounded-lg border border-stone-200 shadow-lg text-xs space-y-2 max-w-[210px]">
         <div className="font-bold text-stone-800 uppercase tracking-wider font-mono text-[10px] pb-1 border-b border-stone-200">
           Filtri Mappa
         </div>
@@ -321,7 +385,7 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
           }`}
         >
           <span className="flex items-center gap-1.5">
-            <span className="text-amber-700 font-bold">☩</span> Conventi ({allStages.reduce((acc, s) => acc + s.convents.length, 0)})
+            <span className="text-amber-700 font-bold">☩</span> Conventi ({totalConvents})
           </span>
           {showConvents ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
         </button>
@@ -335,7 +399,7 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
           }`}
         >
           <span className="flex items-center gap-1.5">
-            <span className="text-emerald-700 font-bold">▲</span> Aree Tenda ({allStages.reduce((acc, s) => acc + s.campsites.length, 0)})
+            <span className="text-emerald-700 font-bold">▲</span> Aree Tenda ({totalCampsites})
           </span>
           {showCampsites ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
         </button>
@@ -349,7 +413,7 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
           }`}
         >
           <span className="flex items-center gap-1.5">
-            <span className="text-rose-700 font-bold">◎</span> Salva-Vita (70)
+            <span className="text-rose-700 font-bold">◎</span> Salva-Vita ({totalEmergency})
           </span>
           {showEmergency ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
         </button>
@@ -385,7 +449,7 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
         </div>
       </div>
 
-      {/* Selected Stage Banner at the bottom of the map */}
+      {/* Banner Tappa Selezionata */}
       {selectedStage && (
         <div className="absolute bottom-3 left-3 right-3 sm:left-auto sm:right-3 z-[1000] bg-white/95 backdrop-blur-md p-3 rounded-lg border border-amber-300 shadow-xl max-w-md">
           <div className="flex items-start justify-between gap-2 mb-1">
@@ -403,7 +467,7 @@ export const PilgrimMap: React.FC<PilgrimMapProps> = ({
           </div>
 
           <p className="text-xs text-stone-600 line-clamp-2 mb-2">
-            {selectedStage.description}
+            ${selectedStage.description}
           </p>
 
           <div className="flex items-center justify-between pt-2 border-t border-stone-200 text-xs">

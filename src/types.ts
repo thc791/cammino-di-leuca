@@ -1,6 +1,6 @@
 export type AccommodationCategory = 'convent' | 'campsite' | 'emergency_booking';
 
-export type RouteId = 'roma_leuca' | 'roma_brindisi';
+export type RouteId = 'roma_leuca' | 'roma_brindisi' | 'terra_santa_gerusalemme';
 
 export interface PilgrimRoute {
   id: RouteId;
@@ -76,7 +76,16 @@ export interface PilgrimStage {
   number: number;
   from: string;
   to: string;
-  region: 'Lazio' | 'Campania' | 'Puglia (Daunia & Tavoliere)' | 'Puglia (Terra di Bari)' | 'Puglia (Salento)';
+  region:
+    | 'Lazio'
+    | 'Campania'
+    | 'Puglia (Daunia & Tavoliere)'
+    | 'Puglia (Terra di Bari)'
+    | 'Puglia (Salento)'
+    | 'Costa di Giaffa & Saron'
+    | 'Colline di Giudea & Latrun'
+    | 'Gerusalemme & Ein Karem'
+    | string;
   distanceKm: number;
   elevationGainM: number;
   elevationLossM: number;

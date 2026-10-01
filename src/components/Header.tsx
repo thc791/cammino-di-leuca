@@ -1,8 +1,8 @@
 import React from 'react';
-import { Compass, MapPin, Tent, Euro, Sparkles, Backpack, ShieldAlert, Church, Check, Navigation } from 'lucide-react';
+import { Compass, MapPin, Tent, Euro, Sparkles, Backpack, ShieldAlert, Church, Check, Navigation, Ship, Scroll, BookOpen } from 'lucide-react';
 import { PilgrimRoute, RouteId } from '../types';
 
-export type TabType = 'stages' | 'map' | 'budget' | 'backpack' | 'ai';
+export type TabType = 'stages' | 'map' | 'handbook' | 'holy_land_guide' | 'budget' | 'backpack' | 'ai';
 
 interface HeaderProps {
   activeTab: TabType;
@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Route Selector Pills */}
-        <div className="flex items-center bg-stone-950/80 p-1 rounded-xl border border-stone-800 font-mono text-xs">
+        <div className="flex flex-wrap items-center bg-stone-950/80 p-1 rounded-xl border border-stone-800 font-mono text-xs gap-1">
           <button
             onClick={() => onSelectRouteId('roma_brindisi')}
             id="route-btn-brindisi"
@@ -56,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
             title="Roma San Pietro → Brindisi (28 tappe per la Terra Santa)"
           >
-            <span>🕊️ Terra Santa (Brindisi)</span>
+            <span>🕊️ Roma → Brindisi</span>
             <span className="text-[10px] opacity-80 font-normal">28 tappe</span>
           </button>
 
@@ -70,8 +70,22 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
             title="Roma San Pietro → Santa Maria di Leuca (35 tappe)"
           >
-            <span>⚓ Leuca</span>
+            <span>⚓ Roma → Leuca</span>
             <span className="text-[10px] opacity-80 font-normal">35 tappe</span>
+          </button>
+
+          <button
+            onClick={() => onSelectRouteId('terra_santa_gerusalemme')}
+            id="route-btn-holy-land"
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+              selectedRouteId === 'terra_santa_gerusalemme'
+                ? 'bg-amber-600 text-white font-bold shadow-sm'
+                : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60'
+            }`}
+            title="Giaffa → Gerusalemme (6 tappe a piedi)"
+          >
+            <span>☩ A Piedi a Gerusalemme</span>
+            <span className="text-[10px] opacity-80 font-normal">6 tappe</span>
           </button>
         </div>
 
@@ -127,6 +141,38 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Compass className="w-4 h-4 text-emerald-400" />
           <span>Mappa Interattiva</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('handbook')}
+          id="tab-handbook"
+          className={`flex items-center gap-2 px-4 py-2.5 border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
+            activeTab === 'handbook'
+              ? 'border-amber-400 text-amber-300 bg-amber-500/20 font-semibold'
+              : 'border-transparent text-stone-400 hover:text-stone-200 hover:bg-stone-800/20'
+          }`}
+        >
+          <BookOpen className="w-4 h-4 text-amber-400" />
+          <span>Guida Pellegrino & Credenziale</span>
+          <span className="px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-300 text-[10px] font-mono font-bold">
+            Galateo + Documenti
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('holy_land_guide')}
+          id="tab-holy-land-guide"
+          className={`flex items-center gap-2 px-4 py-2.5 border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
+            activeTab === 'holy_land_guide'
+              ? 'border-amber-400 text-amber-300 bg-amber-500/20 font-semibold'
+              : 'border-transparent text-stone-400 hover:text-stone-200 hover:bg-stone-800/20'
+          }`}
+        >
+          <Ship className="w-4 h-4 text-sky-400" />
+          <span>Guida Terra Santa & Oltremare</span>
+          <span className="px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-300 text-[10px] font-mono font-bold">
+            Stretto + Aereo + Tappe
+          </span>
         </button>
 
         <button
